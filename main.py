@@ -846,17 +846,33 @@ class SubscriptionCollector:
         bar.close()
         logger.info('检测订阅节点有效性完成')
 
+        # 读取直接采集的节点
         direct_nodes = []
         if os.path.exists(self.collected_nodes_path):
             with open(self.collected_nodes_path, 'r', encoding='utf-8') as f:
                 direct_nodes = f.read().splitlines()
         
+        # 合并所有来源
         final_list = self.airport_list + direct_nodes
-        write_str = '\n'.join(str(item) for item in final_list)
-
+        
+        # 过滤：只保留节点URL，移除订阅链接
+        nodes_only = []
+        for item in final_list:
+            item_str = str(item).strip()
+            # 保留协议节点，排除http订阅链接
+            if '://' in item_str and not item_str.startswith(('http://', 'https://')):
+                nodes_only.append(item_str)
+        
+        # Base64编码节点列表
+        nodes_text = '\n'.join(nodes_only)
+        base64_content = base64.b64encode(nodes_text.encode('utf-8')).decode('utf-8')
+        
+        # 写入Base64编码的订阅文件
         output_file = url_file.replace('sub_store', target)
         with open(output_file, 'w', encoding='utf-8') as f:
-            f.write(write_str)
+            f.write(base64_content)
+        
+        logger.info(f'✅ 已生成 {target} 订阅文件: {len(nodes_only)} 个节点 (Base64编码)')
 
     def write_sub_store(self, yaml_file):
         logger.info('写入 sub_store 文件--')

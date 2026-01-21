@@ -203,8 +203,8 @@ subconverter_backends:
 | 文件 | 说明 |
 |------|------|
 | `sub_all.yaml` | 所有有效订阅的聚合文件（总库） |
-| `sub_all_clash.txt` | Clash 格式订阅列表（基于总库） |
-| `sub_all_loon.txt` | Loon 格式节点列表（基于总库） |
+| `sub_all_clash.txt` | **Clash订阅文件（Base64编码，可直接导入）** ✅ |
+| `sub_all_loon.txt` | **Loon订阅文件（Base64编码，可直接导入）** ✅ |
 | `sub_all_sub_store.txt` | Sub-Store 专用格式（区分机场与开心玩耍） |
 | `YYYY/MM/D-DD.yaml` | 按日期归档的每日抓取结果 |
 | `sub/high_quality_nodes.txt` | ⭐ **高质量筛选节点**（经过连通性、延迟、IP风险检测） |
