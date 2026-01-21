@@ -18,6 +18,7 @@ permissions:
 jobs:
   fetch:
     runs-on: ubuntu-latest
+    timeout-minutes: 30  # 防止执行时间过长（30分钟超时）
     steps:
 
     - name: 迁出代码
@@ -42,6 +43,17 @@ jobs:
     - name: 安装依赖
       run: |
         pip install -r ./requirements.txt
+    
+    - name: 验证 Secrets 配置
+      env:
+        GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GIST_ID: ${{ secrets.GIST_ID }}
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      run: |
+        chmod +x scripts/validate_secrets.sh
+        bash scripts/validate_secrets.sh
         
     - name: Run main.py
       env:
@@ -56,6 +68,7 @@ jobs:
     - name: Run Quality Filter & Push to Telegram
       # 只在有节点文件时才运行筛选
       if: success() || failure()  # 即使main.py失败也尝试筛选
+      timeout-minutes: 20  # 单步超时限制（防止IP检测或测试过多导致超时）
       env:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -69,13 +82,18 @@ jobs:
         if [ -f "sub/sub_all_url_check.txt" ] || [ -f "collected_nodes.txt" ]; then
           echo "✅ 发现节点文件，开始筛选..."
           python ./node_quality_filter.py || echo "⚠️ 节点筛选遇到错误"
+          
+          # 生成订阅 URL (如果节点筛选成功)
+          if [ -f "sub/high_quality_nodes.txt" ]; then
+            echo "🔗 生成订阅 URL..."
+            python ./generate_subscription_url.py || echo "⚠️ 订阅URL生成遇到错误"
+          else
+            echo "⚠️ 未发现高质量节点文件，跳过订阅URL生成"
+          fi
         else
           echo "⚠️ 未发现节点文件，跳过筛选"
         fi
 
-    - name: 拉取最新更改
-      run: |
-        git pull --rebase origin main || true
         
     - name: Commit
       run: |
@@ -93,6 +111,8 @@ jobs:
           echo "📝 没有文件变更，跳过提交"
         else
           git commit -m "🍀 爬取订阅源 $(date '+%Y-%m-%d %H:%M:%S')"
+          # Pull latest changes to avoid conflict
+          git pull --rebase origin main
         fi
         
     - name: 推送更改

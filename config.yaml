@@ -15,10 +15,8 @@ nodes:
   protocols:                   # 支持的节点协议
     - vmess
     - ss
-    - ssr
     - trojan
     - vless
-    - hysteria
     - hysteria2
 
 # Telegram 频道配置

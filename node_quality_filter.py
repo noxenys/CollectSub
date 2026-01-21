@@ -443,10 +443,10 @@ class NodeQualityFilter:
                 
                 flag = country_map.get(country_code, '🌐')
                 risk = node.get('risk_score', 'N/A')
-                score = int(node.get('final_score', 0))
                 protocol = node.get('protocol', '').capitalize()
                 
-                new_name = f"{flag} {country_code} 🛡️{risk} ⚡{score} {protocol}"
+                # 方案B格式: 🇺🇸 US | Vless | 🛡️0
+                new_name = f"{flag} {country_code} | {protocol} | 🛡️{risk}"
                 
                 original_url = node['url']
                 final_link = original_url

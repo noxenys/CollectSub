@@ -269,140 +269,40 @@ subconverter_backends:
 
 本项目完全支持 GitHub Actions，实现自动化抓取：
 
-1.# SmartSub 智能订阅
+### 工作流说明
 
-![GitHub Actions](https://github.com/noxenys/SmartSub/workflows/Fetch%20Subscriptions%20Source/badge.svg)
+工作流文件位于 `.github/workflows/fetch.yaml`，主要步骤：
 
-**SmartSub** 是一个智能化的全自动节点订阅与筛选系统。它不仅负责收集，更专注于**清洗与优化**。
+1. **定时触发**: 每天北京时间凌晨 4 点自动运行
+2. **手动触发**: 可在 Actions 页面手动运行
+3. **执行流程**:
+   - 抓取订阅源 (`main.py`)
+   - 筛选高质量节点 (`node_quality_filter.py`)
+   - 生成订阅 URL (`generate_subscription_url.py`)
+   - 推送到 Telegram（如已配置）
+   - 提交更新到仓库
 
-## ✨ 核心特性
+### 首次部署
 
-- **🧠 智能筛选**: 从海量公共节点中提炼出真正可用的高质量节点。
-- **🚀 极致轻量**: 纯 Python 实现，零外部核心依赖。
-- **⚡ 高效筛选**: 多线程并发检测，30秒处理 3000+ 节点。
-- **🛡️ 智能风控**: 集成 **IP 风险检测**与**区域合规检查**，自动过滤被墙或高风险 IP (Gemini/ChatGPT 可用性保障)。
-- **📨 自动分发**: 支持 **Telegram Bot** 自动推送高质量订阅（文件/Gist/Base64）。
-- **🤖 全自动**: 配合 GitHub Actions 实现每日自动抓取、筛选、推送。
-
-## 🛠️ 主要功能
-从收集的节点中筛选出高质量节点：
-
-```bash
-python node_quality_filter.py
-```
-
-**筛选标准：**
-- ✅ **连通性测试**：检查节点是否可以正常连接
-- ✅ **延迟测试**：测量连接延迟，优选低延迟节点
-- ✅ **协议评分**：现代协议(hysteria2, vless)获得更高分数
-- ✅ **自动去重**：移除完全重复的节点
-- ✅ **智能排序**：按综合得分和延迟排序
-
-**输出文件：**
-- `high_quality_nodes.txt` - 筛选后的高质量节点
-- `quality_report.json` - 详细的质量分析报告
-
-**配置调优：**
-
-在 `config.yaml` 中调整筛选参数：
-
-```yaml
-quality_filter:
-  max_workers: 32              # 并发测试线程数
-  connect_timeout: 5           # 连接超时(秒)
-  max_latency: 500             # 最大延迟(毫秒)
-  preferred_protocols:         # 首选协议
-    - hysteria2
-    - vless
-    - trojan
-```
+1. Fork 本仓库
+2. 配置必需的 Secrets (Settings → Secrets → Actions):
+   - `GIST_TOKEN`: GitHub Personal Access Token (需 `gist` 权限)
+   - `GIST_ID`: Gist ID (可选，用于固定订阅链接)
+3. 手动触发一次工作流验证配置
+4. 完成！之后将自动运行
 
 ---
 
-### 失效订阅管理
+## 📝 更新日志
 
-所有失效的订阅会被记录到 `failed_subscriptions.log`：
+### v2.0 (2026-01)
+- ✅ 修复 GitHub Actions 推送冲突问题
+- ✅ 添加自动订阅 URL 生成
+- ✅ 增强节点 URL 正则表达式
+- ✅ 添加日志文件自动轮转
+- ✅ 优化工作流程
 
-```
-=== 2026-01-20 16:20:00 - 失效订阅 (3 个) ===
-https://dead-link.com/sub1
-https://timeout-link.com/sub2
-https://404-link.com/sub3
-```
-
-如需恢复误删的订阅，可从日志文件中找回。
-
-### 质量控制调优
-
-根据需求调整 `config.yaml` 中的质量参数：
-
-```yaml
-quality_control:
-  min_nodes: 5                 # 提高到 5 个节点
-  enable_duplicate_check: true # 保持开启
-  enable_quality_check: false  # 关闭质检（不推荐）
-```
-
----
-
-## 📈 性能优化建议
-
-| 环境 | max_workers | request_timeout | 说明 |
-|------|-------------|-----------------|------|
-| **GitHub Actions (推荐)** | **32** | **6-8** | 极致速度模式，适合配额紧张用户 |
-| 本地/高性能 | 32-64 | 10-15 | 追求更全面的抓取覆盖率 |
-| 低配置服务器 | 8-16 | 15-20 | 稳定性优先，避免 CPU 过载 |
-
----
-
-## 🤝 致谢与参考
-
-本项目的发展离不开开源社区，特别感谢以下项目提供的灵感与资源：
-
-- **核心框架**: 基于 [RenaLio/proxy-minging](https://github.com/RenaLio/proxy-minging/) 进行重构和增强
-- **订阅源采集**: 参考了 [ermaozi/get_subscribe](https://github.com/ermaozi/get_subscribe) 的高质量订阅源列表与维护策略
-- **爬虫逻辑**: 借鉴了 [ssrlive/proxypool](https://github.com/ssrlive/proxypool) 的抓取思路与正则匹配模式
-
----
-
-## 🔒 安全说明
-
-- ✅ 所有依赖已升级到最新安全版本
-- ✅ PyYAML >= 6.0.1（修复 CVE-2020-14343 等漏洞）
-- ✅ requests >= 2.32.4（修复凭证泄露漏洞）
-- ✅ urllib3 >= 2.2.0（修复资源耗尽漏洞）
-
----
-
-## � 资源说明
-
-- **公共订阅源 (`sub/` 目录)**: 
-  - 包含每日自动爬取的**海量原始节点** (30,000+)。
-  - 适合作为节点池或自行二次筛选。
-  - 文件：`sub/sub_all_url_check.txt` (全部URL), `sub/sub_all_clash.txt` (Clash格式) 等。
-
-- **高质量筛选 (`node_quality_filter.py`)**:
-  - 本项目提供的**核心工具**。
-  - 用于从海量公共节点中，提炼出**低延迟、低风险、可解锁流媒体**的 VIP 节点。
-  - **隐私说明**: 筛选后的高质量节点默认**不上传 GitHub**，而是通过 Telegram Bot 私发给自己。建议 Fork 本项目搭建属于你自己的私有订阅服务。
-
-## �📜 免责声明
-
-本项目仅供**学习交流**使用，请勿用于非法用途。
-
-- ❌ 请勿用于商业目的
-- ❌ 请勿用于违法活动
-- ⚠️ 使用本工具产生的任何后果由使用者自行承担
-
----
-
-## ⭐ Star History
-
-如果这个项目对您有帮助，请给个 Star ⭐ 支持一下！
-
----
-
-**最近更新**：
+### v1.0
 - 🎯 智能质量控制系统
 - 🔄 自动失效订阅清理
 - 📊 详细统计报告
@@ -428,3 +328,4 @@ quality_control:
 - 详细的错误日志
 - 运行环境（操作系统、Python 版本）
 - 相关配置文件（脱敏后）
+

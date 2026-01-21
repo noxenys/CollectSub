@@ -47,7 +47,8 @@ class SubscriptionCollector:
         
         # 4. 正则表达式
         self.re_str = r"https?://[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]"
-        self.node_str = r'(?:vmess|ss|ssr|trojan|vless|hysteria|hysteria2)://[-a-zA-Z0-9+/=@#?&._%[\]:]+'
+        # 更全面的节点 URL 正则（兼容 RFC 3986，防止参数截断）
+        self.node_str = r'(?:vmess|ss|trojan|vless|hysteria2)://[-a-zA-Z0-9+/=@#?&._%[\]:~!*();,]+'
         self.check_node_url_str = "https://{}/sub?target={}&url={}&insert=false&config=config%2FACL4SSR.ini"
         
         # 5. 配置参数 (默认值)
@@ -116,16 +117,32 @@ class SubscriptionCollector:
         self.content_limit_mb = performance.get('content_limit_mb', 3)
         self.request_timeout = performance.get('request_timeout', 15)
         
+        # 验证配置参数范围
+        try:
+            assert 1 <= self.max_workers <= 128, f"max_workers 必须在 1-128 之间，当前: {self.max_workers}"
+            assert 1 <= self.content_limit_mb <= 50, f"content_limit_mb 必须在 1-50 之间，当前: {self.content_limit_mb}"
+            assert 3 <= self.request_timeout <= 60, f"request_timeout 必须在 3-60 之间，当前: {self.request_timeout}"
+        except AssertionError as e:
+            logger.error(f"❌ 配置参数错误: {e}")
+            raise
+        
         # 读取质量控制配置
         quality = data.get('quality_control', {})
         self.min_nodes = quality.get('min_nodes', 3)
         self.enable_quality_check = quality.get('enable_quality_check', True)
         
+        # 验证质量控制参数
+        try:
+            assert 1 <= self.min_nodes <= 100, f"min_nodes 必须在 1-100 之间，当前: {self.min_nodes}"
+        except AssertionError as e:
+            logger.error(f"❌ 配置参数错误: {e}")
+            raise
+        
         # 节点级去重池
         self.unique_nodes = set()
         
-        logger.info(f'性能配置: 线程数={self.max_workers}, 限制={self.content_limit_mb}MB, 超时={self.request_timeout}s')
-        logger.info(f'质量控制: 最少节点={self.min_nodes}, 质检={self.enable_quality_check}')
+        logger.info(f'✅ 性能配置: 线程数={self.max_workers}, 限制={self.content_limit_mb}MB, 超时={self.request_timeout}s')
+        logger.info(f'✅ 质量控制: 最少节点={self.min_nodes}, 质检={self.enable_quality_check}')
         
         # 获取 Telegram 频道
         list_tg_raw = data.get('tgchannel', [])
@@ -737,6 +754,18 @@ class SubscriptionCollector:
             failed_count = len(self.failed_sub_list)
             logger.warning(f'发现 {failed_count} 个失效订阅链接，已自动清理')
             
+            # 日志大小限制和轮转（防止无限增长）
+            max_log_size = 1024 * 1024  # 1MB
+            if os.path.exists(self.failed_log_path):
+                log_size = os.path.getsize(self.failed_log_path)
+                if log_size > max_log_size:
+                    backup_path = self.failed_log_path + '.old'
+                    try:
+                        os.rename(self.failed_log_path, backup_path)
+                        logger.info(f'日志文件过大 ({log_size/1024/1024:.2f}MB)，已备份到 {backup_path}')
+                    except Exception as e:
+                        logger.warning(f'日志备份失败: {e}')
+            
             timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             with open(self.failed_log_path, 'a', encoding='utf-8') as f:
                 f.write(f'\n=== {timestamp} - 失效订阅 ({failed_count} 个) ===\n')
@@ -867,12 +896,30 @@ class SubscriptionCollector:
         nodes_text = '\n'.join(nodes_only)
         base64_content = base64.b64encode(nodes_text.encode('utf-8')).decode('utf-8')
         
-        # 写入Base64编码的订阅文件
+        # 写入Base64编码的订阅文件（添加文件大小限制）
         output_file = url_file.replace('sub_store', target)
+        
+        # 文件大小限制：5MB
+        max_file_size = 5 * 1024 * 1024  # 5MB
+        content_size = len(base64_content.encode('utf-8'))
+        
+        if content_size > max_file_size:
+            logger.warning(f'⚠️ {target} 文件过大 ({content_size/1024/1024:.2f}MB > 5MB)，将进行智能裁剪...')
+            # 计算需要保留的节点数量
+            keep_ratio = max_file_size / content_size
+            keep_count = int(len(nodes_only) * keep_ratio * 0.95)  # 保留95%以确保不超限
+            
+            # 随机采样保留节点（更公平）
+            import random
+            nodes_only = random.sample(nodes_only, keep_count)
+            nodes_text = '\n'.join(nodes_only)
+            base64_content = base64.b64encode(nodes_text.encode('utf-8')).decode('utf-8')
+            logger.info(f'📊 已裁剪至 {keep_count} 个节点 ({len(base64_content.encode("utf-8"))/1024/1024:.2f}MB)')
+        
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(base64_content)
         
-        logger.info(f'✅ 已生成 {target} 订阅文件: {len(nodes_only)} 个节点 (Base64编码)')
+        logger.info(f'✅ 已生成 {target} 订阅文件: {len(nodes_only)} 个节点 (Base64编码, {len(base64_content.encode("utf-8"))/1024/1024:.2f}MB)')
 
     def write_sub_store(self, yaml_file):
         logger.info('写入 sub_store 文件--')
