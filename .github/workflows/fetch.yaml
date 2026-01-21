@@ -1,0 +1,86 @@
+name: Fetch Subscriptions Source
+
+# 触发条件
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: '0 20 * * *' # 北京时间凌晨4点 (UTC 20:00)
+  watch:
+    types: started
+  # - cron: '0 3,12 * * *'
+  # -'0 */1 * * *'
+
+# 赋予 GITHUB_TOKEN 写权限
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: 迁出代码
+      uses: actions/checkout@v4
+
+    - name: 安装Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+      
+    - name: 加载缓存
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+      
+    - name: 设置时区
+      run: sudo timedatectl set-timezone 'Asia/Shanghai'
+
+    - name: 安装依赖
+      run: |
+        pip install -r ./requirements.txt
+        
+    - name: Run main.py
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        SERVERCHAN_KEY: ${{ secrets.SERVERCHAN_KEY }}
+        PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+      run: |
+        python ./main.py
+
+    - name: Run Quality Filter & Push to Telegram
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        ABUSEIPDB_API_KEY: ${{ secrets.ABUSEIPDB_API_KEY }}
+        # 优先使用 GIST_TOKEN (需要用户创建 PAT 并赋予 gist 权限)
+        # 如果不存在，尝试使用默认 GITHUB_TOKEN (通常没有 gist 权限，只能用于非 gist 操作)
+        GITHUB_TOKEN: ${{ secrets.GIST_TOKEN || secrets.GITHUB_TOKEN }}
+      run: |
+        # 运行筛选，结果会自动通过 Telegram 发送 (如果在 .gitignore 中配置了，不会被 commit)
+        python ./node_quality_filter.py
+
+    - name: 拉取最新更改
+      run: |
+        git pull --rebase origin main || true
+        
+    - name: Commit
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git add ./sub ./collected_nodes.txt
+        git add -f ./failed_subscriptions.log || true
+        git add ./blacklist.txt || true
+        # 忽略 .gitignore 中排除的文件 (高质量节点不会被提交)
+        git commit -m "🍀 爬取订阅源 $(date '+%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
+        
+    - name: 推送更改
+      uses:  ad-m/github-push-action@master
+      with:
+         github_token: ${{ secrets.GITHUB_TOKEN }}
+         branch: main

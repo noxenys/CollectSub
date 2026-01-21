@@ -1,0 +1,149 @@
+# 性能配置
+performance:
+  max_workers: 32              # 最大并发线程数（根据机器性能调整）
+  content_limit_mb: 3          # 下载内容大小限制（MB）
+  request_timeout: 6           # 请求超时时间（秒）
+
+# 质量控制配置
+quality_control:
+  min_nodes: 3                 # 订阅最少节点数（少于此数量视为低质量）
+  enable_duplicate_check: true # 启用内容去重（消除重复订阅）
+  enable_quality_check: true   # 启用质量检查（过滤空订阅和垃圾内容）
+  
+# 节点配置
+nodes:
+  protocols:                   # 支持的节点协议
+    - vmess
+    - ss
+    - ssr
+    - trojan
+    - vless
+    - hysteria
+    - hysteria2
+
+# Telegram 频道配置
+tgchannel:
+  - https://t.me/WFVPN
+  - https://t.me/ripaojiedian
+  - https://t.me/SSRSUB
+  - https://t.me/FProxies
+  - https://t.me/TGVPN777
+  - https://t.me/v2queen
+  #2025年6月23日 新增
+  - https://t.me/ZDYZ2
+  #- https://t.me/vpn880
+  - https://t.me/freeyule
+  - https://t.me/suyucom
+  # 2024-03-01 新增
+  - https://t.me/ShareCentre
+  #- https://t.me/onessr
+  #- https://t.me/freeshadowsock
+  - https://t.me/changfengchannel
+  - https://t.me/Free166
+  #- https://t.me/aiuvpn
+  #- https://t.me/ltscxk
+  #- https://t.me/bpjzx2
+  - https://t.me/xiaoxinv
+  #- https://t.me/murandepindao
+  - https://t.me/ShareCentrePro
+  - https://t.me/zyfxlnn
+  - https://t.me/juzibaipiao
+  - https://t.me/freeVPNjd
+   # 2024-03-01 新增
+  - https://t.me/v2raydailyupdate
+  - https://t.me/allv2board
+  # 2024-02-29 新增
+  #- https://t.me/jcvpn
+  - https://t.me/wxdy666
+  #下面是自己添加的 LRC
+  #- https://t.me/sharingnode      #节点地址http://file.52nfw.cn/word/obtain.php?user=111111&id=1
+  #- https://t.me/aifenxiang2020   #分享的是节点信息
+  #- https://t.me/ssrList          #分享的是节点信息，https://fanqiangdang.com提供
+  - https://t.me/mftizi           #分享的是节点信息
+  #- https://t.me/vmess_tg         #有源，有节点
+  - https://t.me/freev2rays       #分享的是节点信息
+  #- https://t.me/v2list           #分享的是节点信息，https://fanqiangdang.com提供
+  #下面是自己添加的，好像都是分享的节点信息，订阅源抓不到
+  - https://t.me/yaney_01
+  - https://t.me/bamboo_vpn
+  - https://t.me/maxshare
+  - https://t.me/BmFt1
+  - https://t.me/fffffx2
+  #- https://t.me/gulaiguq_baipiao2
+  - https://t.me/Jsnzk
+  - https://t.me/wbnet
+  - https://t.me/go4sharing
+  #- https://t.me/miaomua
+  #- https://t.me/allporter
+  - https://t.me/freekankan
+  #- https://t.me/baipiao01
+  - https://t.me/vpnhat
+  - https://t.me/dingyue_Center
+  - https://t.me/kxswa
+  - https://t.me/hkaa0
+  - https://t.me/iosfulishare
+  #- https://t.me/univstar
+  # From ssrlive/proxypool
+  - https://t.me/ssrList
+
+# 直连订阅源 (Direct Subscription URLs) - GitHub/Websites
+subscribe:
+  - https://raw.githubusercontent.com/ssrsub/ssr/master/ssrsub
+  - https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/Eternity
+  - https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/v2ray.txt
+  - https://raw.githubusercontent.com/tbbatbb/Proxy/master/dist/v2ray.config.txt
+  - https://raw.githubusercontent.com/vveg26/get_proxy/main/dist/v2ray.config.txt
+
+# 订阅转换 API 后端地址 (Subconverter Backends)
+subconverter_backends:
+  - api.dler.io
+  - sub.xeton.dev
+  # - sub.id9.cc
+  # - sub.maoxiongnet.com
+  - api.v1.mk
+  - sub.d1.mk
+  # - sub.bgp.sh
+
+# 网页模糊抓取源 (Web Page Fuzzing Sources)
+# 程序将访问这些网页，并提取其中的 http/https 链接作为订阅源
+web_pages:
+  - https://merlinblog.xyz/wiki/freess.html
+  - https://fanqiangdang.com/forum-48-1.html
+  - https://github.com/ermaozi/get_subscribe
+
+# 订阅转换 API (Subscription Converter APIs) - 旧配置保留兼容
+# 用于验证订阅有效性，如果留空将使用默认 API
+sub_convert_apis:
+  - api.dler.io
+  - sub.xeton.dev
+  - sub.id9.cc
+  - sub.maoxiongnet.com
+
+# 节点质量筛选配置 (Node Quality Filter)
+quality_filter:
+  max_workers: 32              # 并发测试线程数
+  connect_timeout: 5           # 连接超时时间(秒)
+  max_latency: 500             # 最大可接受延迟(毫秒)
+  min_speed: 0                 # 最小下载速度(KB/s)，0表示不测速
+  
+  # 大规模节点处理配置 (针对万级节点)
+  max_test_nodes: 5000         # 最多测试节点数(建议3k-5k)
+  max_output_nodes: 200        # 最多输出节点数(建议100-200)
+  preferred_protocols_only: false  # 只测试首选协议(true=更快)
+  smart_sampling: true         # 智能采样(按协议分组)
+  
+  # IP风险/纯净度检测 (IP Risk Check)
+  ip_risk_check:
+    enabled: true              # 是否开启
+    provider: ipapi            # 提供商: ipapi (免Key), abuseipdb (需Key)
+    check_top_nodes: 50        # 只检测Top N节点
+    max_risk_score: 50         # (AbuseIPDB专用)
+    api_key: ""                # (AbuseIPDB专用)
+    
+  # 首选协议列表(优先级从高到低)
+  preferred_protocols:
+    - hysteria2
+    - vless
+    - trojan
+    - vmess
+    - ss

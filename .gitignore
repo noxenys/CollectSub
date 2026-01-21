@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+*.log
+failed_subscriptions.log
+
+# Environment
+.env
+
+# Temporary files
+*.bak
+*.tmp
+
+# Test
+.pytest_cache/
+htmlcov/
+.coverage
+
+# 订阅数据文件（保持仓库整洁，避免提交大量数据）
+# sub/**/*.yaml
+# sub/**/*.txt
+# sub/**/
+!sub/.gitkeep
+
+# 私密订阅文件（通过Telegram Bot分发，不在GitHub展示）
+sub/high_quality_nodes.txt
+sub/quality_report.json
+sub/*_base64.txt
+high_quality_nodes.txt
+quality_report.json
