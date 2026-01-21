@@ -49,16 +49,19 @@ class SubscriptionURLGenerator:
             }
             
             # 检查是否存在已保存的 Gist ID
+            # 优先级: 环境变量(Secrets) > 本地文件
             gist_id_file = os.path.join(os.path.dirname(nodes_file), '.gist_id')
-            existing_gist_id = None
+            existing_gist_id = os.getenv('GIST_ID')
             
-            if os.path.exists(gist_id_file):
+            if not existing_gist_id and os.path.exists(gist_id_file):
                 try:
                     with open(gist_id_file, 'r', encoding='utf-8') as f:
                         existing_gist_id = f.read().strip()
-                    logger.info(f'📝 发现已有 Gist ID: {existing_gist_id[:8]}...')
+                    logger.info(f'📝 发现本地 Gist ID: {existing_gist_id[:8]}...')
                 except:
                     pass
+            elif existing_gist_id:
+                logger.info(f'📝 使用环境变量 GIST_ID: {existing_gist_id[:8]}...')
             
             # 尝试更新已有的 Gist
             if existing_gist_id:

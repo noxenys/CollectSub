@@ -63,6 +63,7 @@ jobs:
         # 优先使用 GIST_TOKEN (需要用户创建 PAT 并赋予 gist 权限)
         # 如果不存在，尝试使用默认 GITHUB_TOKEN (通常没有 gist 权限，只能用于非 gist 操作)
         GITHUB_TOKEN: ${{ secrets.GIST_TOKEN || secrets.GITHUB_TOKEN }}
+        GIST_ID: ${{ secrets.GIST_ID }}
       run: |
         # 检查是否有节点可以筛选
         if [ -f "sub/sub_all_url_check.txt" ] || [ -f "collected_nodes.txt" ]; then
