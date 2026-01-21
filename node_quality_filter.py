@@ -430,7 +430,7 @@ class NodeQualityFilter:
         """保存筛选结果"""
         # 保存高质量节点
         with open(self.output_file, 'w', encoding='utf-8') as f:
-            for node in available_nodes:
+            for index, node in enumerate(available_nodes, 1):
                 # 1. 生成标准化名称
                 # 格式: 🇺🇸 US 🛡️0 ⚡98
                 country_code = node.get('country', 'UNK')
@@ -445,8 +445,8 @@ class NodeQualityFilter:
                 risk = node.get('risk_score', 'N/A')
                 protocol = node.get('protocol', '').capitalize()
                 
-                # 方案B格式: 🇺🇸 US | Vless | 🛡️0
-                new_name = f"{flag} {country_code} | {protocol} | 🛡️{risk}"
+                # 新格式: 国家图标 国家 协议 编号排序
+                new_name = f"{flag} {country_code} {protocol} {index}"
                 
                 original_url = node['url']
                 final_link = original_url
