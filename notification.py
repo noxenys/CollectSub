@@ -20,7 +20,7 @@ from loguru import logger
 import datetime
 
 
-def send_notification(message, title="CollectSub 运行通知"):
+def send_notification(message, title="SmartSub 运行通知"):
     """
     统一的通知发送接口
     会尝试所有配置的通知方式
@@ -99,7 +99,7 @@ def send_discord(message):
     try:
         data = {
             'content': message,
-            'username': 'CollectSub Bot',
+            'username': 'SmartSub Bot',
             'avatar_url': 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png'
         }
         response = requests.post(webhook_url, json=data, timeout=10)
@@ -218,7 +218,7 @@ def format_notification_message(stats_data):
                 failed)
     quality_improvement = (filtered / (total + filtered) * 100) if (total + filtered) > 0 else 0
     
-    message = f"""🎉 *CollectSub 运行完成*
+    message = f"""🎉 *SmartSub 运行完成*
 
 ✅ *有效订阅*: {valid} 个
   • Clash: {stats_data.get('clash_count', 0)}
@@ -242,7 +242,7 @@ def format_notification_message(stats_data):
 
 def format_error_notification(error_message):
     """格式化错误通知消息"""
-    message = f"""❌ *CollectSub 运行失败*
+    message = f"""❌ *SmartSub 运行失败*
 
 ⚠️ *错误信息*:
 {error_message}

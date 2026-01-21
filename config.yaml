@@ -126,20 +126,35 @@ quality_filter:
   max_latency: 500             # 最大可接受延迟(毫秒)
   min_speed: 0                 # 最小下载速度(KB/s)，0表示不测速
   
-  # 大规模节点处理配置 (针对万级节点)
-  max_test_nodes: 5000         # 最多测试节点数(建议3k-5k)
-  max_output_nodes: 200        # 最多输出节点数(建议100-200)
-  preferred_protocols_only: false  # 只测试首选协议(true=更快)
-  smart_sampling: true         # 智能采样(按协议分组)
+  # 大规模节点处理配置 - 精选高质量方案
+  max_test_nodes: 5000         # 最多测试节点数
+  max_output_nodes: 150        # 输出150个精选节点
+  min_guarantee: 150           # 保底150个节点
+  preferred_protocols_only: false  # 测试所有协议
+  smart_sampling: true         # 智能采样
   
-  # IP风险/纯净度检测 (IP Risk Check)
-  ip_risk_check:
-    enabled: true              # 是否开启
-    provider: ipapi            # 提供商: ipapi (免Key), abuseipdb (需Key)
-    check_top_nodes: 50        # 只检测Top N节点
-    max_risk_score: 50         # (AbuseIPDB专用)
-    api_key: ""                # (AbuseIPDB专用)
-    
+  # 区域限制 (Region Limit) - 改为降分模式，不直接丢弃
+  region_limit:
+    enabled: true
+    policy: score              # 改为score模式：不在白名单的降分而不是丢弃
+    # 白名单: 优选以下国家 (ISO 3166-1 alpha-2 代码)
+    allowed_countries: 
+      - US # 美国
+      - JP # 日本
+      - KR # 韩国
+      - DE # 德国
+      - GB # 英国
+      - TW # 台湾
+      - SG # 新加坡
+      - FR # 法国
+      - NL # 荷兰
+      # 移除 AU, CA, IN (质量一般)
+    # 黑名单: 直接拒绝以下国家
+    blocked_countries:
+      - CN # 中国
+      - IR # 伊朗
+      - RU # 俄罗斯
+      - KP # 朝鲜    
   # 首选协议列表(优先级从高到低)
   preferred_protocols:
     - hysteria2
@@ -147,3 +162,39 @@ quality_filter:
     - trojan
     - vmess
     - ss
+
+# IP风险/纯净度检测 (IP Risk Check) - 评分模式
+ip_risk_check:
+  enabled: true              # 开启高质量IP检测
+  provider: ipapi            # 提供商: ipapi (免Key) 或 abuseipdb (需Key，更精准)
+  check_top_nodes: 300       # 检测Top 300节点 (约需7分钟，平衡速度与覆盖率)
+  
+  # ipapi 行为策略 - 决定如何判断IP纯净度
+  # 🔄 新模式：评分模式（降分但不淘汰节点）
+  ipapi_behavior:
+    # exclude_hosting: 是否对机房/数据中心IP降分
+    # true  = 机房IP风险值50，降5分（仍会保留）
+    # false = 机房IP不降分
+    # 说明：大多数免费节点都是机房IP，设为true会降分但不淘汰
+    exclude_hosting: true    # ✅ 机房IP降分（风险值50，-5分）
+    
+    # exclude_proxy: 是否对被标记为代理的IP降分
+    # true  = 代理IP风险值60，降3分
+    # false = 代理IP不降分
+    # 推荐：false（代理节点本身就是我们需要的）
+    exclude_proxy: false     # ✅ 允许代理IP（不降分）
+    
+    # exclude_mobile: 是否对移动网络IP降分
+    # true  = 移动IP风险值30，降2分
+    # false = 移动IP不降分
+    exclude_mobile: false    # ✅ 允许移动网络（不降分）
+    
+  # 以下仅 AbuseIPDB 生效 (需要API Key)
+  max_risk_score: 50         # 最大风险评分，超过此值的节点会被降分
+  api_key: ""                # AbuseIPDB API Key (留空则使用ipapi)
+
+# 📊 风险值说明：
+#   0 = 家庭宽带IP（最佳质量，ChatGPT/Gemini可用率90%+）
+#   50 = 机房IP（质量中等，部分ChatGPT可用）
+#   60 = 代理IP（如果exclude_proxy=true）
+#   100 = AbuseIPDB检测到的高风险IP

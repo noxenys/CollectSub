@@ -1,4 +1,4 @@
-# CollectSub - 智能订阅聚合器
+# SmartSub - 智能订阅聚合器
 
 🚀 **自动化、全方位、高质量的代理订阅抓取与聚合工具**
 
@@ -47,14 +47,23 @@
 ### 1. 克隆项目
 
 ```bash
-git clone https://github.com/yourusername/collectSub.git
-cd collectSub
+git clone https://github.com/yourusername/SmartSub.git
+cd SmartSub
 ```
 
 ### 2. 安装依赖
 
 ```bash
 pip install -r requirements.txt
+```
+
+**依赖管理说明**:
+- `requirements.txt`: 使用 `>=` 允许小版本更新，获取安全补丁
+- `requirements-lock.txt`: 锁定当前测试通过的稳定版本，适合生产环境
+
+如需使用锁定版本：
+```bash
+pip install -r requirements-lock.txt
 ```
 
 ### 3. 运行程序
@@ -198,6 +207,40 @@ subconverter_backends:
 | `sub_all_loon.txt` | Loon 格式节点列表（基于总库） |
 | `sub_all_sub_store.txt` | Sub-Store 专用格式（区分机场与开心玩耍） |
 | `YYYY/MM/D-DD.yaml` | 按日期归档的每日抓取结果 |
+| `sub/high_quality_nodes.txt` | ⭐ **高质量筛选节点**（经过连通性、延迟、IP风险检测） |
+| `sub/quality_report.json` | 节点质量分析报告（包含统计数据） |
+
+### 节点格式规范
+
+高质量节点输出（`sub/high_quality_nodes.txt`）采用标准化命名格式：
+
+```
+{国旗Emoji} {国家代码} 🛡️{风险值} ⚡{综合得分} {协议名}
+```
+
+**示例**：
+```
+🇺🇸 US 🛡️0 ⚡98 Vmess
+🇯🇵 JP 🛡️0 ⚡95 Vless
+🇸🇬 SG 🛡️15 ⚡85 Trojan
+🇩🇪 DE 🛡️N/A ⚡72 Hysteria2
+```
+
+**字段说明**：
+- **国旗Emoji**: 节点所在国家/地区的旗帜
+- **国家代码**: ISO 3166-1 alpha-2 标准代码（US, JP, SG等）
+- **🛡️风险值**: IP风险评分（0=纯净IP，100=高风险，N/A=未检测）
+  - `0`: 家庭宽带IP，最佳质量
+  - `1-50`: 低风险
+  - `50+`: 高风险（可能被限制）
+  - `N/A`: 未启用IP检测
+- **⚡综合得分**: 基于协议、延迟、风险值的综合评分（0-100+）
+  - 协议加分：Hysteria2(10) > Vless(8) > Trojan(7) > Vmess(6) > SS(5)
+  - 延迟加分：<100ms(+5), 100-200ms(+3), 200-300ms(+1)
+  - IP纯净度加分：风险值0(+10)
+- **协议名**: 节点协议类型（Vmess, Vless, Trojan, SS, Hysteria2等）
+
+> **注意**: `collected_nodes.txt` 中的节点为原始格式（未重命名），仅 `high_quality_nodes.txt` 采用上述标准化格式。
 
 ---
 
@@ -207,7 +250,7 @@ subconverter_backends:
 
 1.# SmartSub 智能订阅
 
-![GitHub Actions](https://github.com/noxenys/CollectSub/workflows/Fetch%20Subscriptions%20Source/badge.svg)
+![GitHub Actions](https://github.com/noxenys/SmartSub/workflows/Fetch%20Subscriptions%20Source/badge.svg)
 
 **SmartSub** 是一个智能化的全自动节点订阅与筛选系统。它不仅负责收集，更专注于**清洗与优化**。
 
@@ -345,3 +388,22 @@ quality_control:
 - 🔒 安全依赖升级
 - ⚡ 性能优化和配置化
 - 🛡️ 内存保护与文件自动维护
+
+---
+
+## 📚 相关文档
+
+- **[配置参数详解](docs/CONFIGURATION.md)** - 详细说明所有配置参数的作用、影响和最佳实践
+- **[故障排查指南](docs/TROUBLESHOOTING.md)** - 常见问题诊断和解决方案
+- **[节点来源说明](NODES_SOURCE.md)** - 各个文件的来源和用途说明
+
+---
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+在提交 Issue 时，请提供：
+- 详细的错误日志
+- 运行环境（操作系统、Python 版本）
+- 相关配置文件（脱敏后）

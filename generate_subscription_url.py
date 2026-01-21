@@ -122,6 +122,7 @@ class SubscriptionURLGenerator:
     def send_subscription_urls_to_telegram(self, nodes_file):
         """
         生成订阅URL并发送到Telegram
+        如果未配置Telegram，则只生成文件（降级方案）
         
         Args:
             nodes_file: 节点文件路径
@@ -130,19 +131,29 @@ class SubscriptionURLGenerator:
         logger.info('🔗 生成订阅URL')
         logger.info('='*60)
         
-        if not self.telegram_bot_token or not self.telegram_chat_id:
-            logger.error('❌ 未配置Telegram Bot')
+        # 检查文件是否存在
+        if not os.path.exists(nodes_file):
+            logger.error(f'❌ 节点文件不存在: {nodes_file}')
             return
+        
+        # 检查Telegram配置
+        has_telegram = bool(self.telegram_bot_token and self.telegram_chat_id)
+        if not has_telegram:
+            logger.warning('⚠️ 未配置Telegram Bot，将只生成订阅URL文件（降级模式）')
         
         # 统计节点数
         with open(nodes_file, 'r', encoding='utf-8') as f:
             node_count = len([line for line in f if line.strip()])
         
-        message_parts = [
-            "🔗 *订阅URL已生成*\n",
-            f"📊 节点总数: {node_count} 个\n",
-            "━━━━━━━━━━━━━━━━━━━━\n"
-        ]
+        logger.info(f'📊 节点总数: {node_count} 个')
+        
+        message_parts = []
+        if has_telegram:
+            message_parts = [
+                "🔗 *订阅URL已生成*\n",
+                f"📊 节点总数: {node_count} 个\n",
+                "━━━━━━━━━━━━━━━━━━━━\n"
+            ]
         
         # 方案1: GitHub Gist（推荐）
         logger.info('\n📌 方案1: 创建GitHub Gist订阅...')
@@ -185,11 +196,12 @@ class SubscriptionURLGenerator:
         message_parts.append("已生成Base64编码文件\n")
         message_parts.append("可配合任意订阅转换使用\n")
         
-        # 发送消息到Telegram
-        message = ''.join(message_parts)
-        self._send_telegram_message(message)
+        # 发送消息到Telegram（如果已配置）
+        if has_telegram:
+            message = ''.join(message_parts)
+            self._send_telegram_message(message)
         
-        # 创建订阅URL文件
+        # 创建订阅URL文件（始终生成）
         urls_file = nodes_file.replace('.txt', '_urls.txt')
         with open(urls_file, 'w', encoding='utf-8') as f:
             f.write("=" * 60 + "\n")
@@ -225,11 +237,19 @@ class SubscriptionURLGenerator:
             f.write("使用方法:\n")
             f.write("  将Base64内容作为订阅链接或配合转换API使用\n")
         
-        # 发送订阅URL文件
-        self._send_telegram_file(urls_file, "📋 *完整订阅URL清单*")
+        logger.info(f'💾 订阅URL文件已保存: {urls_file}')
+        
+        # 发送订阅URL文件到Telegram（如果已配置）
+        if has_telegram:
+            self._send_telegram_file(urls_file, "📋 *完整订阅URL清单*")
+        else:
+            logger.info('💡 提示: 配置 TELEGRAM_BOT_TOKEN 和 TELEGRAM_CHAT_ID 可自动推送到Telegram')
         
         logger.info('='*60)
-        logger.info('✅ 订阅URL已发送到Telegram')
+        if has_telegram:
+            logger.info('✅ 订阅URL已发送到Telegram')
+        else:
+            logger.info('✅ 订阅URL文件生成完成（未配置Telegram推送）')
         logger.info('='*60)
     
     def _send_telegram_message(self, message):

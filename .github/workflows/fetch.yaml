@@ -51,9 +51,11 @@ jobs:
         SERVERCHAN_KEY: ${{ secrets.SERVERCHAN_KEY }}
         PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
       run: |
-        python ./main.py
+        python ./main.py || echo "⚠️ main.py 执行遇到错误，但继续执行"
 
     - name: Run Quality Filter & Push to Telegram
+      # 只在有节点文件时才运行筛选
+      if: success() || failure()  # 即使main.py失败也尝试筛选
       env:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -62,8 +64,13 @@ jobs:
         # 如果不存在，尝试使用默认 GITHUB_TOKEN (通常没有 gist 权限，只能用于非 gist 操作)
         GITHUB_TOKEN: ${{ secrets.GIST_TOKEN || secrets.GITHUB_TOKEN }}
       run: |
-        # 运行筛选，结果会自动通过 Telegram 发送 (如果在 .gitignore 中配置了，不会被 commit)
-        python ./node_quality_filter.py
+        # 检查是否有节点可以筛选
+        if [ -f "sub/sub_all_url_check.txt" ] || [ -f "collected_nodes.txt" ]; then
+          echo "✅ 发现节点文件，开始筛选..."
+          python ./node_quality_filter.py || echo "⚠️ 节点筛选遇到错误"
+        else
+          echo "⚠️ 未发现节点文件，跳过筛选"
+        fi
 
     - name: 拉取最新更改
       run: |
@@ -73,13 +80,23 @@ jobs:
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
-        git add ./sub ./collected_nodes.txt
+        
+        # 添加文件（分别处理，避免一个失败影响全部）
+        git add ./sub || true
+        git add ./collected_nodes.txt || true
         git add -f ./failed_subscriptions.log || true
         git add ./blacklist.txt || true
-        # 忽略 .gitignore 中排除的文件 (高质量节点不会被提交)
-        git commit -m "🍀 爬取订阅源 $(date '+%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
+        
+        # 检查是否有变更
+        if git diff --staged --quiet; then
+          echo "📝 没有文件变更，跳过提交"
+        else
+          git commit -m "🍀 爬取订阅源 $(date '+%Y-%m-%d %H:%M:%S')"
+        fi
         
     - name: 推送更改
+      # 只在有提交时才推送
+      if: success()
       uses:  ad-m/github-push-action@master
       with:
          github_token: ${{ secrets.GITHUB_TOKEN }}

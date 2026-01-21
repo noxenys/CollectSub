@@ -18,8 +18,9 @@ import socket
 import base64
 import requests
 import yaml
+import random
 import concurrent.futures
-from urllib.parse import urlparse, parse_qs
+import urllib.parse
 from loguru import logger
 from tqdm import tqdm
 
@@ -101,6 +102,12 @@ class NodeQualityFilter:
                 logger.info(f'大规模优化: 最多测试={self.max_test_nodes}, 最多输出={self.max_output_nodes}, 首选协议={self.preferred_protocols_only}')
                 if self.ip_risk_config['enabled']:
                     logger.info(f'🛡️ IP风险检测已开启 (Top {self.ip_risk_config["check_top_nodes"]})')
+                
+                # 读取区域限制配置
+                self.region_config = quality_filter.get('region_limit', {})
+                if self.region_config.get('enabled'):
+                   allowed = self.region_config.get('allowed_countries', [])
+                   logger.info(f'🌍 区域限制已开启: 白名单={allowed if allowed else "关闭"}, 策略={self.region_config.get("policy", "filter")}')
         except Exception as e:
             logger.warning(f'加载配置失败，使用默认配置: {e}')
     
@@ -290,13 +297,8 @@ class NodeQualityFilter:
         node_info['final_score'] = score
         return node_info
     
-    def filter_nodes(self):
-        """主筛选流程"""
-        logger.info('='*60)
-        logger.info('🔍 开始节点质量筛选')
-        logger.info('='*60)
-        
-        # 优先从 sub/sub_all_url_check.txt 读取，如果不存在则从 collected_nodes.txt
+    def process_nodes(self):
+        """处理节点筛选的主流程 (支持保底机制)"""
         nodes = []
         input_source = None
         
@@ -312,139 +314,178 @@ class NodeQualityFilter:
             input_source = 'collected_nodes.txt'
         else:
             logger.error(f'❌ 未找到输入文件！')
-            logger.error(f'   - {self.input_file_all}')
-            logger.error(f'   - {self.input_file_collected}')
             return
         
         logger.info(f'📥 从 {input_source} 读取到 {len(nodes)} 个节点')
-
         
-        # 去重
-        original_count = len(nodes)
-        nodes = list(set(nodes))
-        logger.info(f'🔄 去重后剩余 {len(nodes)} 个节点 (去除 {original_count - len(nodes)} 个重复)')
-        
-        # 解析节点
-        logger.info('📝 解析节点信息...')
+        # 1. 解析节点并按协议分类 (去重)
         parsed_nodes = []
-        parse_bar = tqdm(total=len(nodes), desc='解析进度')
+        parsed_nodes_map = {}
+        for url in tqdm(nodes, desc='解析节点'):
+            info = self.parse_node(url) # 注意这里调用的是 self.parse_node
+            if info:
+                key = f"{info['protocol']}://{info['host']}:{info['port']}"
+                if key not in parsed_nodes_map:
+                    parsed_nodes_map[key] = info
+                    parsed_nodes.append(info)
         
-        for node in nodes:
-            node_info = self.parse_node(node)
-            if node_info:
-                parsed_nodes.append(node_info)
-            parse_bar.update(1)
+        logger.info(f'✅ 解析成功: {len(parsed_nodes)} 个节点')
         
-        parse_bar.close()
-        logger.info(f'✅ 成功解析 {len(parsed_nodes)} 个节点')
-        
-        # 按协议统计
-        protocol_stats = {}
-        for node in parsed_nodes:
-            protocol = node['protocol']
-            protocol_stats[protocol] = protocol_stats.get(protocol, 0) + 1
-        
-        logger.info('📊 协议分布:')
-        for protocol, count in sorted(protocol_stats.items(), key=lambda x: x[1], reverse=True):
-            logger.info(f'   - {protocol}: {count} 个')
-        
-        # 智能采样和筛选
+        # 2. 协议过滤
         if self.preferred_protocols_only:
-            logger.info(f'\n🎯 只保留首选协议: {", ".join(self.preferred_protocols)}')
-            before_filter = len(parsed_nodes)
-            parsed_nodes = [n for n in parsed_nodes if n['protocol'] in self.preferred_protocols]
-            logger.info(f'   过滤后: {len(parsed_nodes)} 个 (移除 {before_filter - len(parsed_nodes)} 个)')
+             parsed_nodes = [n for n in parsed_nodes if n['protocol'] in self.preferred_protocols]
+             logger.info(f'🛡️ 仅保留首选协议, 剩余: {len(parsed_nodes)} 个')
+             
+        # 随机打乱
+        import random
+        random.shuffle(parsed_nodes)
         
-        # 节点数量限制
-        if len(parsed_nodes) > self.max_test_nodes:
-            logger.info(f'\n📊 节点数量({len(parsed_nodes)})超过限制({self.max_test_nodes})，启动智能采样...')
-            
-            if self.smart_sampling:
-                # 智能采样：按协议分组，每组按比例采样
-                sampled_nodes = []
-                for protocol in sorted(self.protocol_scores.keys(), key=lambda x: self.protocol_scores[x], reverse=True):
-                    protocol_nodes = [n for n in parsed_nodes if n['protocol'] == protocol]
-                    if not protocol_nodes:
-                        continue
-                    
-                    # 每个协议最多取 max_test_nodes / 协议数量
-                    max_per_protocol = self.max_test_nodes // len(protocol_stats)
-                    sample_size = min(len(protocol_nodes), max_per_protocol)
-                    
-                    # 随机采样
-                    import random
-                    sampled = random.sample(protocol_nodes, sample_size)
-                    sampled_nodes.extend(sampled)
-                    logger.info(f'   - {protocol}: {len(protocol_nodes)} → {sample_size} 个')
-                
-                parsed_nodes = sampled_nodes[:self.max_test_nodes]
-                logger.info(f'✅ 智能采样完成，测试节点数: {len(parsed_nodes)}')
-            else:
-                # 简单截取前N个
-                logger.info(f'   随机采样 {self.max_test_nodes} 个节点')
-                import random
-                parsed_nodes = random.sample(parsed_nodes, self.max_test_nodes)
-        
-        # 测试连通性
-        logger.info(f'\n🔌 测试节点连通性 (超时: {self.connect_timeout}s, 最大延迟: {self.max_latency}ms)...')
+        # 准备保底参数
+        min_guarantee = self.max_output_nodes if hasattr(self, 'max_output_nodes') else 50
+        if hasattr(self, 'quality_filter_config'): # 尝试读取 config 中的 min_guarantee
+             min_guarantee = self.quality_filter_config.get('min_guarantee', 50)
+        # 或者重新读取一次(为了保险)
+        try:
+            with open(self.config_path, 'r', encoding='utf-8') as f:
+                c = yaml.safe_load(f)
+                min_guarantee = c.get('quality_filter', {}).get('min_guarantee', 50)
+        except: pass
+             
+        max_test_once = self.max_test_nodes
         available_nodes = []
+        total_tested = 0
         
-        test_bar = tqdm(total=len(parsed_nodes), desc='测试进度')
+        remaining_nodes = parsed_nodes
+        batch_idx = 1
         
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            futures = [executor.submit(self.test_connectivity, node) for node in parsed_nodes]
+        # --- 循环测试流程 ---
+        while True:
+            if len(available_nodes) >= min_guarantee:
+                logger.info(f'✅ 已满足保底数量 ({len(available_nodes)} >= {min_guarantee})，停止测试。')
+                break
             
-            for future in concurrent.futures.as_completed(futures):
-                result = future.result()
-                if result and result.get('latency', float('inf')) <= self.max_latency:
-                    available_nodes.append(result)
-                test_bar.update(1)
+            if not remaining_nodes:
+                logger.info(f'⚠️ 所有源节点已耗尽，停止测试。')
+                break
+                
+            batch_size = max_test_once
+            if len(available_nodes) > 0: batch_size = 2000 # 后续批次减小
+            
+            current_batch = remaining_nodes[:batch_size]
+            remaining_nodes = remaining_nodes[batch_size:]
+            
+            logger.info(f'\n🔄 [批次 {batch_idx}] 开始测试 {len(current_batch)} 个节点 (当前可用: {len(available_nodes)}, 目标: {min_guarantee})...')
+            
+            # 测试连通性
+            batch_results = []
+            test_bar = tqdm(total=len(current_batch), desc=f'批次 {batch_idx} 测试')
+            
+            with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                futures = [executor.submit(self.test_connectivity, node) for node in current_batch]
+                for future in concurrent.futures.as_completed(futures):
+                    result = future.result()
+                    if result and result.get('latency', float('inf')) <= self.max_latency:
+                        batch_results.append(result)
+                    test_bar.update(1)
+            test_bar.close()
+            
+            available_nodes.extend(batch_results)
+            total_tested += len(current_batch)
+            logger.info(f'   -> 本批次新增可用: {len(batch_results)} 个')
+            
+            if total_tested >= 20000:
+                 logger.warning('⚠️ 达到最大测试上限 (20000)，强制停止。')
+                 break
+            batch_idx += 1
+            
+        logger.info(f'\n✅ 最终可用节点: {len(available_nodes)} 个')
         
-        test_bar.close()
+        # 计算得分
+        for node in available_nodes: self.calculate_score(node)
         
-        logger.info(f'✅ 可用节点: {len(available_nodes)} 个 (可用率: {len(available_nodes)/len(parsed_nodes)*100:.1f}%)')
-        
-        # 计算综合得分
-        for node in available_nodes:
-            self.calculate_score(node)
-        
-        # 按得分排序
         available_nodes.sort(key=lambda x: (x['final_score'], -x.get('latency', 999)), reverse=True)
         
-        # 限制输出节点数量 (先限制数量再查风险，节省API)
         if len(available_nodes) > self.max_output_nodes:
-            logger.info(f'\n✂️ 输出节点数({len(available_nodes)})超过限制，只保留Top {self.max_output_nodes}')
+            logger.info(f'✂️ 输出节点超过限制，截取 Top {self.max_output_nodes}')
             available_nodes = available_nodes[:self.max_output_nodes]
             
-        # 这里进行 IP 风险检测 (针对最终列表的前N个)
+        # IP 风险检测 (包含区域检查)
         available_nodes = self.check_ip_risk(available_nodes)
         
-        # 再次排序（因为风险值可能改变分数）并且截断
         available_nodes.sort(key=lambda x: (x['final_score'], -x.get('latency', 999)), reverse=True)
          
-        # 保存结果
         self._save_results(available_nodes, parsed_nodes, nodes)
         
-        # 可选：发送到Telegram Bot（需要配置环境变量）
         if os.getenv('TELEGRAM_BOT_TOKEN') and os.getenv('TELEGRAM_CHAT_ID'):
             try:
                 from send_to_telegram import send_subscription_to_telegram
-                logger.info('\n📤 检测到Telegram配置，准备发送订阅...')
+                logger.info('\n📤 准备发送订阅...')
                 send_subscription_to_telegram(self.output_file, self.report_file)
             except Exception as e:
                 logger.warning(f'⚠️ Telegram发送失败: {e}')
         
-        logger.info('='*60)
-        logger.info('✨ 筛选完成！')
-        logger.info('='*60)
+        logger.info('='*60 + '\n✨ 筛选完成！\n' + '='*60)
     
     def _save_results(self, available_nodes, parsed_nodes, original_nodes):
         """保存筛选结果"""
         # 保存高质量节点
         with open(self.output_file, 'w', encoding='utf-8') as f:
             for node in available_nodes:
-                f.write(f"{node['url']}\n")
-        
+                # 1. 生成标准化名称
+                # 格式: 🇺🇸 US 🛡️0 ⚡98
+                country_code = node.get('country', 'UNK')
+                country_map = {
+                    'US': '🇺🇸', 'JP': '🇯🇵', 'KR': '🇰🇷', 'HK': '🇭🇰', 'TW': '🇹🇼', 
+                    'SG': '🇸🇬', 'GB': '🇬🇧', 'DE': '🇩🇪', 'CA': '🇨🇦', 'AU': '🇦🇺',
+                    'FR': '🇫🇷', 'NL': '🇳🇱', 'IN': '🇮🇳', 'TH': '🇹🇭', 'MY': '🇲🇾',
+                    'UNK': '🌐'
+                }
+                
+                flag = country_map.get(country_code, '🌐')
+                risk = node.get('risk_score', 'N/A')
+                score = int(node.get('final_score', 0))
+                protocol = node.get('protocol', '').capitalize()
+                
+                new_name = f"{flag} {country_code} 🛡️{risk} ⚡{score} {protocol}"
+                
+                original_url = node['url']
+                final_link = original_url
+                
+                try:
+                    # 2. 根据协议类型应用名称
+                    if original_url.startswith('vmess://'):
+                        # VMess: base64(json) -> 修改 ps -> base64
+                        b64_str = original_url.replace('vmess://', '')
+                        # 补齐 padding
+                        missing_padding = len(b64_str) % 4
+                        if missing_padding: b64_str += '=' * (4 - missing_padding)
+                        
+                        try:
+                            json_str = base64.b64decode(b64_str).decode('utf-8')
+                            v_config = json.loads(json_str)
+                            v_config['ps'] = new_name # 修改备注
+                            
+                            # 重新打包
+                            new_json = json.dumps(v_config, ensure_ascii=False)
+                            new_b64 = base64.b64encode(new_json.encode('utf-8')).decode('utf-8')
+                            final_link = 'vmess://' + new_b64
+                        except:
+                            # 如果解析失败，回退到追加 hash (虽然 VMess 标准不支持，但部分客户端支持)
+                            if '#' in final_link: final_link = final_link.split('#')[0]
+                            final_link += f"#{urllib.parse.quote(new_name)}"
+                            
+                    else:
+                        # VLESS, Trojan, SS, Hysteria: 修改 URL Fragment (#)
+                        if '#' in final_link:
+                            final_link = final_link.split('#')[0]
+                        final_link += f"#{urllib.parse.quote(new_name)}"
+                        
+                except Exception as e:
+                    logger.warning(f"重命名失败: {e}")
+                    pass
+                
+                f.write(final_link + '\n')
+                
         logger.info(f'💾 已保存 {len(available_nodes)} 个高质量节点到: {self.output_file}')
         
         # 生成详细报告
@@ -553,7 +594,6 @@ class NodeQualityFilter:
         logger.info(f'\n🛡️ 开始IP风险检测 ({provider}, Top {len(target_nodes)})...')
         
         checked_nodes = []
-        import socket
         
         for node in tqdm(target_nodes, desc='风险检测'):
             try:
@@ -578,6 +618,33 @@ class NodeQualityFilter:
                     # 2. IP-API 免Key模式
                     elif provider == 'ipapi':
                         self._check_ipapi(node, ip)
+
+                # 3. 区域限制检查
+                region_config = getattr(self, 'region_config', {})
+                if region_config.get('enabled') and node.get('country'):
+                    country = node['country']
+                    allowed = region_config.get('allowed_countries', [])
+                    blocked = region_config.get('blocked_countries', [])
+                    policy = region_config.get('policy', 'filter')
+                    
+                    is_allowed = True
+                    # 如果有白名单，必须在白名单内
+                    if allowed and country not in allowed:
+                        is_allowed = False
+                    # 如果有黑名单，不能在黑名单内
+                    elif blocked and country in blocked:
+                        is_allowed = False
+                        
+                    if not is_allowed:
+                        if policy == 'filter':
+                            logger.info(f"   - ❌ 地区不符 ({country}): {node['host']}")
+                            # 跳过添加，直接进入下一个循环
+                            # 避免触发速率限制
+                            time.sleep(1.5 if provider == 'ipapi' else 0.5)
+                            continue 
+                        else:
+                            node['score'] -= 50 # 扣大分
+                            logger.info(f"   - ⚠️ 地区不符 ({country}): 扣50分")
                 
                 checked_nodes.append(node)
                 # 避免触发速率限制
@@ -642,31 +709,68 @@ class NodeQualityFilter:
         return True
 
     def _check_ipapi(self, node, ip):
-        """IP-API 免Key检测逻辑"""
+        """
+        使用 ip-api.com 检测 (免Key)
+        检测项目: Hosting(机房), Proxy(代理), Mobile(移动)
+        
+        改进：评分模式，不直接淘汰节点，只影响评分
+        """
         try:
-            # IP-API 免费版不支持 https, 且有速率限制 (45请求/分)
-            response = requests.get(f'http://ip-api.com/json/{ip}?fields=status,message,countryCode,isp,org,hosting', timeout=5)
+            # 请求字段: status, message, countryCode, country, isp, org, as, mobile, proxy, hosting
+            url = f'http://ip-api.com/json/{ip}?fields=status,message,countryCode,country,isp,org,as,mobile,proxy,hosting'
+            response = requests.get(url, timeout=5)
             if response.status_code == 200:
                 data = response.json()
-                if data['status'] == 'success':
-                    node['country'] = data.get('countryCode', 'Unknown')
-                    node['isp'] = data.get('isp', 'Unknown')
-                    is_hosting = data.get('hosting', False)
-                    
-                    # 区域检查
-                    if not self.check_region_restriction(node):
-                        node['risk_score'] = 'RegionBlocked'
-                        node['final_score'] -= 20 # 严重扣分
-                        return
+                if data.get('status') == 'fail':
+                    return
 
-                    # 简单风险判断
-                    if is_hosting:
-                        node['risk_score'] = 'DataCenter'
-                    else:
-                        node['risk_score'] = 'Residential'
-                        node['final_score'] += 3
-        except:
-            pass
+                # 获取详细信息
+                country = data.get('countryCode', 'UNK')
+                isp = data.get('isp', 'Unknown')
+                is_mobile = data.get('mobile', False)
+                is_proxy = data.get('proxy', False)
+                is_hosting = data.get('hosting', False)
+                
+                node['country'] = country
+                node['isp'] = isp
+                
+                # 风险判断逻辑 - 评分模式
+                behavior = self.ip_risk_config.get('ipapi_behavior', {})
+                exclude_hosting = behavior.get('exclude_hosting', True)
+                exclude_proxy = behavior.get('exclude_proxy', False)
+                exclude_mobile = behavior.get('exclude_mobile', False)
+                
+                # 计算风险评分
+                risk_score = 0
+                risk_factors = []
+                
+                if is_hosting and exclude_hosting:
+                    risk_factors.append('Hosting')
+                    risk_score = 50  # 机房IP风险值50
+                    node['final_score'] -= 5  # 降5分，而不是归零
+                    
+                if is_proxy and exclude_proxy:
+                    risk_factors.append('Proxy')
+                    risk_score = max(risk_score, 60)  # 代理IP风险值60
+                    node['final_score'] -= 3
+                    
+                if is_mobile and exclude_mobile:
+                    risk_factors.append('Mobile')
+                    risk_score = max(risk_score, 30)
+                    node['final_score'] -= 2
+                
+                if risk_factors:
+                    node['risk_score'] = risk_score
+                    logger.info(f"   - ⚠️ 风险IP ({', '.join(risk_factors)}): {ip} ({isp}) | 风险值={risk_score} 降分")
+                else:
+                    # 纯净家庭宽带IP - 最佳质量
+                    node['risk_score'] = 0
+                    node['final_score'] += 10
+                    logger.info(f"   - ✅ 纯净IP: {ip} ({country} - {isp}) | 风险值=0 加分")
+                    
+        except Exception as e:
+            logger.warning(f"IP-API 检测异常: {e}")
+
 
 
 def main():
@@ -675,7 +779,7 @@ def main():
     logger.add(lambda msg: print(msg, end=''), colorize=True, format="<green>{time:HH:mm:ss}</green> | <level>{message}</level>")
     
     filter_tool = NodeQualityFilter()
-    filter_tool.filter_nodes()
+    filter_tool.process_nodes()
 
 
 if __name__ == '__main__':

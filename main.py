@@ -988,7 +988,7 @@ class SubscriptionCollector:
                     'runtime': runtime_str
                 }
                 message = format_notification_message(stats_data)
-                send_notification(message, "CollectSub 运行成功")
+                send_notification(message, "SmartSub 运行成功")
             except Exception as e:
                 logger.warning(f'发送通知失败: {e}')
                 
@@ -999,7 +999,7 @@ class SubscriptionCollector:
             try:
                 from notification import send_notification, format_error_notification
                 error_msg = format_error_notification(str(e))
-                send_notification(error_msg, "CollectSub 运行失败")
+                send_notification(error_msg, "SmartSub 运行失败")
             except:
                 pass
             raise
