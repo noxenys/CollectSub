@@ -1,4 +1,4 @@
-# 性能配置
+﻿# 性能配置
 performance:
   max_workers: 32              # 最大并发线程数（根据机器性能调整）
   content_limit_mb: 3          # 下载内容大小限制（MB）
@@ -9,7 +9,7 @@ quality_control:
   min_nodes: 3                 # 订阅最少节点数（少于此数量视为低质量）
   enable_duplicate_check: true # 启用内容去重（消除重复订阅）
   enable_quality_check: true   # 启用质量检查（过滤空订阅和垃圾内容）
-  
+
 # 节点配置
 nodes:
   protocols:                   # 支持的节点协议
@@ -23,11 +23,10 @@ nodes:
 tgchannel:
   - https://t.me/WFVPN
   - https://t.me/ripaojiedian
-  - https://t.me/SSRSUB
   - https://t.me/FProxies
   - https://t.me/TGVPN777
   - https://t.me/v2queen
-  #2025年6月23日 新增
+  # 2025-06-23 新增
   - https://t.me/ZDYZ2
   #- https://t.me/vpn880
   - https://t.me/freeyule
@@ -47,7 +46,7 @@ tgchannel:
   - https://t.me/zyfxlnn
   - https://t.me/juzibaipiao
   - https://t.me/freeVPNjd
-   # 2024-03-01 新增
+  # 2024-03-01 新增
   - https://t.me/v2raydailyupdate
   - https://t.me/allv2board
   # 2024-02-29 新增
@@ -81,18 +80,112 @@ tgchannel:
   - https://t.me/hkaa0
   - https://t.me/iosfulishare
   #- https://t.me/univstar
-  # From ssrlive/proxypool
-  - https://t.me/ssrList
+  # 额外 TG 频道
+  - https://t.me/V2rayNGn
+  - https://t.me/free4allVPN
+  - https://t.me/PrivateVPNs
+  - https://t.me/V2rayng_Fast
+  - https://t.me/DirectVPN
+  # 2025-01-30 新增 (来自 TelegramV2rayCollector)
+  - https://t.me/ProxyFn
+  - https://t.me/v2ray_outlineir
+  - https://t.me/v2ray_swhil
+  - https://t.me/NetAccount
+  - https://t.me/oneclickvpnkeys
+  - https://t.me/daorzadannet
+  - https://t.me/LoRd_uL4mo
+  - https://t.me/Outline_Vpn
+  - https://t.me/vpn_xw
+  - https://t.me/prrofile_purple
+  - https://t.me/proxyymeliii
+  - https://t.me/ShadowSocks_s
+  - https://t.me/azadi_az_inja_migzare
+  - https://t.me/WomanLifeFreedomVPN
+  - https://t.me/MsV2ray
+  - https://t.me/internet4iran
+  - https://t.me/LegenderY_Servers
+  - https://t.me/vpnfail_v2ray
+  - https://t.me/free_v2rayy
+  - https://t.me/UnlimitedDev
+  - https://t.me/vmessorg
+  - https://t.me/v2rayNG_Matsuri
+  - https://t.me/v2ray1_ng
+  - https://t.me/v2rayngvpn
+  - https://t.me/vpn_ioss
+  - https://t.me/v2freevpn
+  - https://t.me/vless_vmess
+  - https://t.me/customv2ray
+  - https://t.me/FalconPolV2rayNG
+  - https://t.me/Jeyksatan
+  - https://t.me/MTConfig
+  - https://t.me/hassan_saboorii
+  - https://t.me/v2rayvmess
+  - https://t.me/v2rayNGNeT
+  - https://t.me/lagvpn13
+  - https://t.me/server01012
+  - https://t.me/ShadowProxy66
+  - https://t.me/ipV2Ray
+  - https://t.me/v2rayNG_VPNN
+  - https://t.me/kiava
+  - https://t.me/Helix_Servers
+  - https://t.me/PAINB0Y
+  - https://t.me/vmess_vless_v2rayng
+  - https://t.me/VpnProSec
+  - https://t.me/VlessConfig
+  - https://t.me/NIM_VPN_ir
+  - https://t.me/FreeIranT
+  - https://t.me/hashmakvpn
+  - https://t.me/X_Her0
+  - https://t.me/Napsternetvirani
+  - https://t.me/Cov2ray
+  - https://t.me/iran_ray
+  - https://t.me/INIT1984
+  - https://t.me/EXOGAMERS
+  - https://t.me/V2RayTz
+  - https://t.me/ServerNett
+  - https://t.me/Pinkpotatocloud
+  - https://t.me/CloudCityy
+  - https://t.me/VmessProtocol
+  - https://t.me/DarkVPNpro
+  - https://t.me/Qv2raychannel
+  - https://t.me/xrayzxn
+  - https://t.me/MehradLearn
+  - https://t.me/shopingv2ray
+  - https://t.me/xrayproxy
+  - https://t.me/Proxy_PJ
+  - https://t.me/SafeNet_Server
+  - https://t.me/ovpn2
+  - https://t.me/OutlineVpnOfficial
+  - https://t.me/proxy_kafee
+  - https://t.me/TheHotVPN
+  - https://t.me/lrnbymaa
+  - https://t.me/v2ray_vpn_ir
+  - https://t.me/ConfigsHUB
+  - https://t.me/freeconfigv2
+  - https://t.me/vpn_tehran
+  - https://t.me/v2_team
+  - https://t.me/AlienVPN402
+  - https://t.me/V2rayngninja
+  - https://t.me/iSegaro
 
 # 直连订阅源 (Direct Subscription URLs) - GitHub/Websites
 subscribe:
-  - https://raw.githubusercontent.com/ssrsub/ssr/master/ssrsub
   - https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/Eternity
   - https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/v2ray.txt
   - https://raw.githubusercontent.com/tbbatbb/Proxy/master/dist/v2ray.config.txt
   - https://raw.githubusercontent.com/vveg26/get_proxy/main/dist/v2ray.config.txt
+  - https://raw.githubusercontent.com/barry-far/V2ray-config/main/Sub6.txt
+  - https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/v2ray/all_sub.txt
+  # 订阅源补充 (GitHub 列表)
+  - https://raw.githubusercontent.com/ebrasha/free-v2ray-public-list/refs/heads/main/all_extracted_configs.txt
+  - https://raw.githubusercontent.com/yebekhe/TelegramV2rayCollector/main/subscribe/all.txt
+  - https://openproxylist.com/v2ray/rawlist/subscribe
+  - https://openproxylist.com/v2ray/rawlist/V2RAY_RAW.txt
+  # 2025-01-30 新增 (GitHub/Clash)
+  - https://raw.githubusercontent.com/mfuu/v2ray/master/clash.yaml
+  - https://raw.githubusercontent.com/anaer/Sub/main/clash.yaml
+  - https://raw.githubusercontent.com/SnapdragonLee/SystemProxy/master/dist/clash_config.yaml
 
-# 订阅转换 API 后端地址 (Subconverter Backends)
 subconverter_backends:
   - api.dler.io
   - sub.xeton.dev
@@ -108,9 +201,10 @@ web_pages:
   - https://merlinblog.xyz/wiki/freess.html
   - https://fanqiangdang.com/forum-48-1.html
   - https://github.com/ermaozi/get_subscribe
+  # 2025-01-30 新增
+  - https://deepwiki.com/free18/v2ray/4.2-free-subscription-options
+  - https://github.com/mermeroo/V2RAY-and-CLASH-Subscription-Links/blob/main/SUB%20LINKS
 
-# 订阅转换 API (Subscription Converter APIs) - 旧配置保留兼容
-# 用于验证订阅有效性，如果留空将使用默认 API
 sub_convert_apis:
   - api.dler.io
   - sub.xeton.dev
@@ -123,14 +217,14 @@ quality_filter:
   connect_timeout: 5           # 连接超时时间(秒)
   max_latency: 500             # 最大可接受延迟(毫秒)
   min_speed: 0                 # 最小下载速度(KB/s)，0表示不测速
-  
+
   # 大规模节点处理配置 - 精选高质量方案
   max_test_nodes: 5000         # 最多测试节点数
   max_output_nodes: 150        # 输出150个精选节点
   min_guarantee: 150           # 保底150个节点
   preferred_protocols_only: false  # 测试所有协议
   smart_sampling: true         # 智能采样
-  
+
   # 区域限制 (Region Limit) - 改为降分模式，不直接丢弃
   region_limit:
     enabled: true
@@ -138,15 +232,11 @@ quality_filter:
     # 白名单: 优选以下国家 (ISO 3166-1 alpha-2 代码)
     allowed_countries: 
       - US # 美国
-      - JP # 日本
       - KR # 韩国
-      - DE # 德国
-      - GB # 英国
       - TW # 台湾
+      - JP # 日本
       - SG # 新加坡
-      - FR # 法国
-      - NL # 荷兰
-      # 移除 AU, CA, IN (质量一般)
+      - CA # 加拿大
     # 黑名单: 直接拒绝以下国家
     blocked_countries:
       - CN # 中国
@@ -161,12 +251,104 @@ quality_filter:
     - vmess
     - ss
 
+# CN probe integration (optional). Provide a JSON result file or URL.
+cn_probe:
+  enabled: false
+  results_path: sub/cn_probe.json
+  results_url: ""         # optional, can also set env CN_PROBE_URL
+  weight: 1.0             # multiplier for CN bonus
+  max_latency: 800        # ms threshold for penalty
+  max_bonus: 6            # max bonus points from CN latency
+
+# 风险/钓鱼节点过滤（基于节点参数规则，默认只降分）
+# Dynamic blind probe head (optional)
+dynamic_probe:
+  enabled: true
+  sample_size: 50
+  min_success: 5
+  force_proxy: true       # force HTTP checks through proxy_url if set
+  proxy_url: ""           # e.g. http://127.0.0.1:7890 or socks5://127.0.0.1:1080
+  supported_protocols:
+    - vless
+    - trojan
+    - vmess
+    - ss
+    - hysteria2
+  save_path: sub/probe_head.json
+
+# CN test proxy (optional)
+cn_test_proxy:
+  enabled: false
+  type: api                # api (recommended) / http (standard HTTP proxy)
+  api_url: ""              # e.g. https://cn-probe.example.com/probe
+  api_token: ""            # optional Bearer token
+  proxy_url: ""            # e.g. http://user:pass@host:port or socks5://host:port
+  timeout: 8
+  test_url: "https://www.google.com/generate_204"
+  expected_status: 204
+  required: true           # if true, fail CN test -> drop node
+
+# Third-party CN probe API (optional)
+cn_probe_api:
+  enabled: false
+  url_template: ""         # e.g. https://api.example.com/probe?host={host}&port={port}
+  method: GET
+  timeout: 8
+  headers: {}
+  success_field: "success"
+  success_values: [true, "ok", 1]
+  locations_path: "data.locations"
+  location_name_field: "city"
+  location_ok_field: "ok"
+  ok_values: [true, "ok", 1]
+  require_locations: ["北京", "上海", "广州"]
+
+risk_filter:
+  enabled: true
+  mode: score            # score(降分) / filter(直接丢弃)
+  penalty: 6             # 每触发一条规则扣分
+  max_penalty: 18        # 最大扣分上限
+  max_path_len: 120      # path 最大长度限制
+  suspicious_tlds:       # 可疑TLD后缀，触发风险扣分
+    - tk
+    - xyz
+    - top
+    - icu
+    - cyou
+    - click
+    - work
+    - monster
+    - gq
+    - ml
+    - ga
+    - cf
+  phishing_keywords:     # 钓鱼关键词，触发风险扣分
+    - login
+    - verify
+    - account
+    - secure
+    - bank
+    - payment
+    - wallet
+    - update
+    - support
+    - auth
+  allow_sni_domains: []  # SNI 白名单域名
+  allow_host_domains: [] # Host 白名单域名
+  allow_path_keywords: []# Path 白名单关键词
+  block_on:
+    sni_phishing: false
+    host_phishing: false
+    path_phishing: false
+    allow_insecure: false
+    security_none: false
+
 # IP风险/纯净度检测 (IP Risk Check) - 评分模式
 ip_risk_check:
   enabled: true              # 开启高质量IP检测
   provider: ipapi            # 提供商: ipapi (免Key) 或 abuseipdb (需Key，更精准)
   check_top_nodes: 300       # 检测Top 300节点 (约需7分钟，平衡速度与覆盖率)
-  
+
   # ipapi 行为策略 - 决定如何判断IP纯净度
   # 🔄 新模式：评分模式（降分但不淘汰节点）
   ipapi_behavior:
@@ -175,21 +357,32 @@ ip_risk_check:
     # false = 机房IP不降分
     # 说明：大多数免费节点都是机房IP，设为true会降分但不淘汰
     exclude_hosting: true    # ✅ 机房IP降分（风险值50，-5分）
-    
+
     # exclude_proxy: 是否对被标记为代理的IP降分
     # true  = 代理IP风险值60，降3分
     # false = 代理IP不降分
     # 推荐：false（代理节点本身就是我们需要的）
     exclude_proxy: false     # ✅ 允许代理IP（不降分）
-    
+
     # exclude_mobile: 是否对移动网络IP降分
     # true  = 移动IP风险值30，降2分
     # false = 移动IP不降分
     exclude_mobile: false    # ✅ 允许移动网络（不降分）
-    
+
   # 以下仅 AbuseIPDB 生效 (需要API Key)
   max_risk_score: 50         # 最大风险评分，超过此值的节点会被降分
   api_key: ""                # AbuseIPDB API Key (留空则使用ipapi)
+
+  # ASN/ISP/ORG 黑名单（仅 ipapi 模式生效）
+  asn_filter:
+    enabled: true
+    mode: score              # score(降分) / filter(直接丢弃)
+    penalty: 10              # 命中黑名单扣分
+    asn_blacklist: []        # 如 ["AS13335","4134","AS9009"]
+    org_blacklist_keywords:  # 如 ["banned", "bulletproof"]
+      []
+    isp_blacklist_keywords:  # 如 ["cloudflare", "amazon"]
+      []
 
 # 📊 风险值说明：
 #   0 = 家庭宽带IP（最佳质量，ChatGPT/Gemini可用率90%+）

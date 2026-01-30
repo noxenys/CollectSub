@@ -13,27 +13,33 @@ SmartSub 旨在为您提供最纯净、稳定的代理体验。它能自动遍�
 ## ✨ 核心特性
 
 ### 🌐 全方位抓取
-- ✅ **Telegram 频道**：自动解析频道消息中的订阅链接
-- ✅ **GitHub/直连源**：直接集成高质量的开源订阅源
-- ✅ **网页模糊抓取**：智能识别任意网页中的订阅链接，无视页面结构
-- ✅ **裸节点捕获**：自动识别并收集 `vmess://`, `ss://`, `trojan://`, `vless://`, `hysteria://` 等节点
+- ✅ **多源采集**：自动聚合 Telegram 频道、GitHub 仓库、直连 URL 及网页模糊抓取
+- ✅ **智能提取**：深度解析页面内容，自动识别 `vmess://`, `ss://`, `trojan://`, `vless://`, `hysteria2://` 等协议
+- ✅ **去重机制**：基于 MD5 和节点参数的智能去重，消除重复订阅
+- ✅ **GitHub 用户去重**：同一 GitHub 用户的多个订阅链接仅保留一个，减少噪音
+- ✅ **安全防护**：内置 SSRF 防护机制，防止恶意请求内网地址
 
-### 🎯 智能质量控制 (NEW!)
-- ✅ **订阅内容验证**：自动过滤空订阅和节点过少的低质量订阅
-- ✅ **智能去重**：MD5 哈希检测，消除内容重复的镜像订阅
-- ✅ **垃圾内容检测**：识别"已过期"、"请购买"等无效订阅
-- ✅ **统计报告**：每次运行自动输出质量控制效果报告
+### 🎯 深度质量控制 (NEW!)
+- ✅ **智能评分系统**：首创节点评分机制，根据协议类型（Hysteria2/VLESS 优先）、地区（CN/RU 降分）、IP 风险值动态评分
+- ✅ **高级风控过滤**：
+  - **钓鱼防护**：自动识别高风险 TLD (.tk, .xyz 等) 和钓鱼关键词
+  - **IP 纯净度检测**：集成 IP-API/AbuseIPDB，识别机房 IP、高风险 IP 和滥用 IP
+  - **ASN/ISP 阻断**：支持按运营商或 ASN 阻断特定网络
+- ✅ **连接性测试**：多维度检测（连通性、延迟、下载速度），确保节点可用性
+- ✅ **动态探测头**：从当次抓取节点中盲选最快节点作为临时跳板，模拟更真实链路
+- ✅ **区域策略**：支持白名单（优选地区）和黑名单（屏蔽地区）策略
 
-### 🛡️ 自动清理与维护 (NEW!)
+### 🛡️ 自动清理与维护
 - ✅ **失效订阅自动删除**：识别 404/502 等错误状态码，自动清理失效链接
-- ✅ **失效记录追踪**：所有失效订阅记录到日志文件，可审查和恢复
-- ✅ **流式下载熔断**：限制下载大小（3MB），防止内存溢出
-- ✅ **文件膨胀保护**：自动限制节点库和黑名单文件大小，防止无限增长
+- ✅ **资源熔断保护**：
+  - **流式下载限制**：单文件最大 3MB，防止内存溢出
+  - **文件大小控制**：自动截断过大的节点库和日志文件
+- ✅ **自动重试机制**：网络波动时自动重试，提高采集成功率
 
-### ⚡ 高性能与稳定性
-- ✅ **并发加速**：32 线程池，极速处理成百上千个订阅
-- ✅ **智能超时控制**：可配置的请求超时和重试机制
-- ✅ **多协议支持**：支持 7+ 种节点协议（vmess, ss, ssr, trojan, vless, hysteria, hysteria2）
+### ⚡ 高性能架构
+- ✅ **极速并发**：内置 32 线程池，秒级处理成百上千个订阅源
+- ✅ **智能采样**：针对超大规模节点库（5000+），采用智能采样算法，兼顾速度与质量
+- ✅ **五协议支持**：仅保留 vmess, ss, trojan, vless, hysteria2
 
 ### ⚙️ 自动化部署
 - ✅ **GitHub Actions 集成**：7×24 小时无人值守自动更新
@@ -66,7 +72,15 @@ pip install -r requirements.txt
 pip install -r requirements-lock.txt
 ```
 
-### 3. 运行程序
+### 3. 自检配置（可选）
+
+```bash
+python scripts/self_check.py
+```
+
+用于快速检查配置合法性、协议范围与订阅源重复项。
+
+### 4. 运行程序
 
 ```bash
 python main.py
@@ -79,6 +93,19 @@ python main.py
 - 生成聚合文件
 
 ---
+
+## 🧭 流程图
+
+```mermaid
+graph TD
+  A[main.py 抓取订阅/节点] --> B{生成 collected_nodes.txt}
+  B --> C[node_quality_filter.py --probe-only]
+  C --> D[生成 probe_head.json]
+  D --> E[启动 sing-box 本地代理]
+  E --> F[node_quality_filter.py 全量筛选]
+  F --> G[generate_subscription_url.py]
+  G --> H[输出订阅与报告]
+```
 
 ## ⚙️ 配置说明
 
@@ -110,13 +137,51 @@ performance:
   request_timeout: 6           # 请求超时（秒）
 ```
 
-### 质量控制配置 (NEW!)
+### 订阅采集质量控制 (Subscription Quality Control)
 
 ```yaml
 quality_control:
-  min_nodes: 3                 # 最少节点数（少于此数将被过滤）
-  enable_duplicate_check: true # 启用内容去重
-  enable_quality_check: true   # 启用质量检查
+  min_nodes: 3                 # 单个订阅最少节点数（少于此数将被过滤）
+  enable_duplicate_check: true # 启用订阅内容去重（防止重复采集）
+  enable_quality_check: true   # 启用基础质量检查
+```
+
+### 节点质量筛选与风控配置 (Node Quality Filter)
+
+```yaml
+quality_filter:
+  max_workers: 32              # 并发测试线程数
+  connect_timeout: 5           # 连接超时时间(秒)
+  max_latency: 500             # 最大可接受延迟(ms)
+  min_speed: 0                 # 最小下载速度(KB/s)
+
+  # 智能采样与输出控制
+  max_test_nodes: 5000         # 最大测试节点数
+  max_output_nodes: 150        # 最终输出精选节点数
+  smart_sampling: true         # 启用智能采样算法
+
+  # 区域策略 (Geo-IP)
+  region_limit:
+    enabled: true
+    policy: score              # score: 降分模式 (推荐) / filter: 阻断模式
+    allowed_countries: [US, KR, TW, JP, SG, HK] # 优选地区 (加分)
+    blocked_countries: [CN, IR, RU, KP]         # 风险地区 (降分/阻断)
+
+# 风险与钓鱼防护 (Risk Control)
+risk_filter:
+  enabled: true
+  mode: score                # score: 降分 / filter: 丢弃
+  penalty: 6                 # 基础扣分
+  suspicious_tlds: [tk, xyz, top, icu, cyou] # 高风险域名后缀
+  phishing_keywords: [login, bank, verify]   # 钓鱼关键词
+
+# IP 纯净度检测 (IP Risk Check)
+ip_risk_check:
+  enabled: true
+  provider: ipapi            # ipapi (免费) 或 abuseipdb (需 Key)
+  ipapi_behavior:
+    exclude_hosting: true    # 机房 IP 降分 (保留但降低优先级)
+    exclude_proxy: false     # 允许代理 IP
 ```
 
 ### 订阅转换后端配置
@@ -212,6 +277,8 @@ subconverter_backends:
 
 ## 📂 输出文件
 
+以下文件为运行时生成，默认建议不提交到 GitHub（已在 `.gitignore` 中忽略）：
+
 ### 根目录文件
 | 文件 | 说明 |
 |------|------|
@@ -256,7 +323,7 @@ subconverter_backends:
   - `50+`: 高风险（可能被限制）
   - `N/A`: 未启用IP检测
 - **⚡综合得分**: 基于协议、延迟、风险值的综合评分（0-100+）
-  - 协议加分：Hysteria2(10) > Vless(8) > Trojan(7) > Vmess(6) > SS(5)
+  - 协议加分：Hysteria2(10) > Vless(9) > Trojan(8) > Vmess(7) > SS(6)
   - 延迟加分：<100ms(+5), 100-200ms(+3), 200-300ms(+1)
   - IP纯净度加分：风险值0(+10)
 - **协议名**: 节点协议类型（Vmess, Vless, Trojan, SS, Hysteria2等）
@@ -271,16 +338,34 @@ subconverter_backends:
 
 ### 工作流说明
 
-工作流文件位于 `.github/workflows/fetch.yaml`，主要步骤：
+工作流文件位于 `.github/workflows/fetch.yml`，主要步骤：
 
 1. **定时触发**: 每天北京时间凌晨 4 点自动运行
 2. **手动触发**: 可在 Actions 页面手动运行
 3. **执行流程**:
    - 抓取订阅源 (`main.py`)
+   - 盲选探测头 (`node_quality_filter.py --probe-only`)
+   - 生成并启动 sing-box 本地代理（用于真实链路检测）
    - 筛选高质量节点 (`node_quality_filter.py`)
    - 生成订阅 URL (`generate_subscription_url.py`)
    - 推送到 Telegram（如已配置）
    - 提交更新到仓库
+
+### ✅ 发布前检查
+
+```bash
+python scripts/self_check.py
+```
+
+建议在提交/发布前运行，确保配置无明显问题、协议范围一致。
+
+### 🧹 订阅源清理
+
+```bash
+python scripts/clean_sources.py
+```
+
+依据最近一次运行生成的 `sub/source_health.json`，自动移除 404 与低质量来源，并做去重。
 
 ### 首次部署
 
@@ -328,4 +413,3 @@ subconverter_backends:
 - 详细的错误日志
 - 运行环境（操作系统、Python 版本）
 - 相关配置文件（脱敏后）
-

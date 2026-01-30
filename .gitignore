@@ -7,38 +7,25 @@ __pycache__/
 .vscode/
 .idea/
 .DS_Store
-
-# Logs
-*.log
-failed_subscriptions.log
+.trae/
 
 # Environment
 .env
+.env.*
 
-# Temporary files
+# Logs
+*.log
+
+# Temporary
 *.bak
 *.tmp
+temp_repo*/
 
-# Test
+# Test/coverage
 .pytest_cache/
 htmlcov/
 .coverage
 
-# 订阅数据文件（保持仓库整洁，避免提交大量数据）
-# sub/**/*.yaml
-# sub/**/*.txt
-# sub/**/
-!sub/.gitkeep
-
-# 私密订阅文件（通过Telegram Bot分发，不在GitHub展示）
-sub/high_quality_nodes.txt
-sub/quality_report.json
-sub/*_base64.txt
-high_quality_nodes.txt
-quality_report.json
-high_quality_nodes_urls.txt
-sub/high_quality_nodes_urls.txt
+# Generated data (keep repo clean)
 .gist_id
 sub/.gist_id
-sub_merge.txt
-sub_merge_base64.txt

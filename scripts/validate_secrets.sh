@@ -86,10 +86,10 @@ if [ -z "$GIST_ID" ]; then
     echo "   建议配置 GIST_ID 以固定订阅链接"
 else
     echo "✅ GIST_ID 已配置: ${GIST_ID:0:8}..."
-    
+
     # 验证 GIST_ID 是否有效
     gist_response=$(curl -s -H "Authorization: token $TOKEN" "https://api.github.com/gists/$GIST_ID")
-    
+
     if echo "$gist_response" | grep -q "Not Found"; then
         echo "⚠️  警告: GIST_ID 无效或无权访问"
         echo "   将创建新的 Gist"
