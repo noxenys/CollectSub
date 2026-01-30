@@ -495,3 +495,25 @@ https://proxy.yugogo.xyz/clash/proxie	request_failed
 
 === 2026-01-31 00:09:16 - 失效订阅 (1 个) ===
 https://iwxf.netlify.app	request_failed
+
+=== 2026-01-31 04:41:53 - 失效订阅 (16 个) ===
+https://subsub.surge.sh/?url=https%3A%2F%2Fraw.githubusercontent.com%2Fgo4sharing%2Fsub%2Fmain%2Fclash.yaml	request_failed
+https://subsub.surge.sh/?url=https%3A%2F%2Fraw.githubusercontent.com%2Fgo4sharing%2Fsub%2Fmain%2Fworker.yaml	request_failed
+https://subsub.surge.sh/?url=https%3A%2F%2Fraw.githubusercontent.com%2Fgo4sharing%2Fsub%2Fmain%2Fsub.yaml	request_failed
+http://dy.changyouvpn.top/api/v1/client/subscribe?token=4e85554dae1c9858676693ae38d50c15	http_432
+https://sub.xn--4gq62ffxz.net/api/v1/client/subscribe?token=38aa18a604421977a22c85144068e7c0	request_failed
+https://sub.xn--4gq62ffxz.net/s/5a2870a87bb5d017fc3d7d7208511b71	request_failed
+https://sub.xn--ioru3fc2t1hb.com/s/a1338a23e248ee43ee4a2373667c91db	request_failed
+https://apps.apple.com/us/app/npv-tunnel/id1629465476	request_failed
+https://danesh1118.github.io/woejeojrbdrhrowbepdn847hendowhshfbtosneodjsyr847shsodnfpfkwlskdn/	http_404
+https://searchresultsworld.com/sr/754870121/SAFEFRAME.html?%21FS=	request_failed
+https://searchresultsworld.com/sr/754870121/SAFEFRAME.html?-FGUS=	request_failed
+https://github.com/ermaozi/get_subscribe&quot;,&quot;user_id&quot;:null	http_404
+https://raw.githubusercontent.com/tbbatbb/Proxy/master/dist/v2ray.config.txt	http_404
+https://sub.xn--4gqp1u.com/api/v1/client/subscribe?token=292d67dab3b28cef1f9e680d3f1a00e6	request_failed
+https://raw.githubusercontent.com/vveg26/get_proxy/main/dist/v2ray.config.txt	http_404
+https://raw.githubusercontent.com/yebekhe/TelegramV2rayCollector/main/subscribe/all.txt	http_404
+
+=== 2026-01-31 04:42:13 - 失效订阅 (2 个) ===
+https://v1.mk/lmG3V0I	http_502
+https://v1.mk/jYz7r0z	http_502
